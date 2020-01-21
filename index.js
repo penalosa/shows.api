@@ -84,4 +84,13 @@ app.get("/categories", async (req, res) => {
     }))
   );
 });
+app.get("/presenter_type", async (req, res) => {
+  return res.json(
+    [`Very involved`, `Technical help`, `No preference`].map(c => ({
+      pic: "/FreshairLogoColour.svg",
+      name: c,
+      slug: c.replace(/[^a-zA-z]+/g, "-").toLowerCase()
+    }))
+  );
+});
 app.listen(port, () => console.log(`shows.api listening on port ${port}!`));
