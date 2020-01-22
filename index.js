@@ -39,6 +39,10 @@ mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/prod", {
 
 app.use(express.json());
 
+app.get("/import", async (req, res) => {
+  const i = JSON.parse(fs.readFileSync("./import.json"));
+  res.json(await Show.create(i));
+});
 app.get("/mine", async (req, res) => {
   try {
     let auth = req.headers["x-auth-token"];
