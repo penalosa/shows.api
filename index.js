@@ -40,7 +40,7 @@ mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/prod", {
 app.use(express.json());
 
 app.get("/import", async (req, res) => {
-  const i = JSON.parse(fs.readFileSync("./import.json"));
+  const i = JSON.parse(await fs.readFile("./import.json"));
   res.json(await Show.create(i));
 });
 app.get("/mine", async (req, res) => {
