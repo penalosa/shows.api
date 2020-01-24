@@ -1,4 +1,3 @@
-const mongoose = require("mongoose");
 const express = require("express");
 const fetch = require("node-fetch");
 const AWS = require("aws-sdk");
@@ -12,51 +11,48 @@ const port = process.env.PORT || 8047;
 const spacesEndpoint = new AWS.Endpoint("nyc3.digitaloceanspaces.com");
 const ghostBase =
   process.env.GHOST_URI || "https://admin.freshair.dev/ghost/api/canary/admin";
+const ghostToken = process.env.GHOST_TOKEN;
 
-const Show = mongoose.model(
-  `Show`,
-  new mongoose.Schema(
-    {
-      slug: String,
-      hosts: [String],
-      name: String,
-      description: String,
-      demo: String,
-      pic: String
-    },
-    {
-      typePojoToMixed: false,
-      typeKey: "$type",
-      timestamps: true
-    }
-  )
-);
-
-mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/prod", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
+// const Show = mongoose.model(
+//   `Show`,
+//   new mongoose.Schema(
+//     {
+//       slug: String,
+//       hosts: [String],
+//       name: String,
+//       description: String,
+//       demo: String,
+//       pic: String
+//     },
+//     {
+//       typePojoToMixed: false,
+//       typeKey: "$type",
+//       timestamps: true
+//     }
+//   )
 
 app.use(express.json());
+const GhostAdminAPI = require("@tryghost/admin-api");
+const Admin = new GhostAdminAPI({
+  url: "https://content.freshair.org.uk",
+  key: ghostToken,
+  version: "v3"
+});
 
-app.get("/mine", async (req, res) => {
+app.get("/all", async (req, res) => {
   try {
-    let auth = req.headers["x-auth-token"];
-    let verify = await fetch(
-      process.env.AUTH_API || `http://localhost:8007/verify`,
-      {
-        method: "POST",
-        headers: {
-          "X-Auth-Token": auth
-        }
-      }
-    ).then(r => r.json());
-    console.log(verify);
-    if (!verify.ok) {
-      return res.status(401);
-    }
-    console.log(await Show.find({ hosts: verify.slug }));
-    return res.json(await Show.find({ hosts: verify.slug }));
+    return res.json(
+      (await Admin.posts.browse({ limit: "all" }))
+        .filter(p => p.tags.find(t => t.slug == "hash-show"))
+        .map(s => ({
+          slug: s.slug,
+          name: s.title,
+          hosts: s.authors.map(a => a.slug),
+          description: s.html,
+          demo: "",
+          pic: s.feature_image
+        }))
+    );
   } catch (e) {
     console.log(e);
     return res.status(500).send(e);
